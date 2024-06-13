@@ -1,52 +1,85 @@
+
 import { useEffect, useState } from 'react'
-import Draggable from 'react-draggable';
-import uuid from 'react-uuid';
+import uuid from 'react-native-uuid';
 import {randomColor} from 'randomcolor'
-
+import Draggable from 'react-draggable'
 import './App.scss'
-
 
 function App() {
 
+// тема
+const [theme,setTheme] = useState("light")
+
+const switchTheme=()=>{
+  setTheme(theme === "light"? "dark" : "light")
+}
+
+console.log(theme);
+  // состояние элемента
   const [state,setState] = useState("")
 
-  const [items,setItems] = useState(
-    JSON.parse(localStorage.getItem("items")) || []
+// js =>json
+
+  // состояние массива элементов
+  const [items,setItems]=useState(
+    JSON.parse(localStorage.getItem('items')) || []
   )
 
+  // добавление в localStorage(json => js)
+
   useEffect(()=>{
-    localStorage.setItem("items",JSON.stringify(items))
-  },[items])
+    localStorage.setItem('items',JSON.stringify(items))
+  }, [items])
+
+// создание нового элемента
+
 
   const newEl=()=>{
-    
-    if(state !== ""){
-      const newItem={
-        id: uuid(),
-        text: state,
-        pos:{x:500,y:-500},
-        color: randomColor({})
+
+    console.log(state);
+
+    if(state.trim() !== ""){
+
+      const newEl={
+        id:uuid.v4(),
+        text:state,
+        color:randomColor({luminosity:"bright",alpha:0.6,format: 'rgba'}),
+        pos:{x: 500,y: -500}
       }
-      
-      setItems([...items,newItem])
+
+      setItems((items)=>[...items,newEl])
+      // очищаем input(это сработает,тк value в input = state)
       setState("")
+
     }else{
-      alert("Enter something")
+      alert('Enter something')
+      // очищаем input(это сработает,тк value в input = state)
+      setState("")
     }
+
   }
+
+// удаление эл
 
   const delEl=(id)=>{
     
     setItems(items.filter((i)=>i.id !== id))
   }
 
-  const defPos = (data,index)=>{
-    const newArr = [...items]
-    newArr[index].pos = {x: data.x, y: data.y}
-    setItems(newArr)
+  // оставаться на местах
+  const updatePos =(data,index)=>{
+    // клонируем массив
+    let newPos = [...items]
+    // по индексу меняем позицию
+    newPos[index].pos =  {x : data.x, y : data.y}
+    // обновляем массив
+    setItems(newPos)
   }
 
-  const keyPress = (e)=>{
+
+  // Чтобы Enter нажимался
+  const keyPress=(e)=>{
+    // 13 - число enter
     if(e.which === 13){
       newEl()
     }
@@ -54,33 +87,48 @@ function App() {
 
   return (
     <>
-     <div className="app">
+     
+   <section className="app" id={theme}>
 
-    <div className="wrapper">
-      <input type="text" placeholder='Enter something'
-      value={state}
-      onChange={(e)=>setState(e.target.value)}
-      onKeyDown={(e)=>keyPress(e)}
-      />
-      <button className="enter" onClick={newEl}>Enter</button>
-    </div>
+    <button className='theme' onClick={switchTheme}>{theme} mode</button>
 
-    {/* добавляем элемент */}
+   <div className="wrapper">
 
-    {
-      items.map((i,index)=>{
-       return(
-        <Draggable key={index} defaultPosition={i.pos} onStop={(e,data)=>{defPos(data,index)}}>
-        <div className="todo__item" style={{backgroundColor : i.color}}>
-          {`${i.text}`}
-          <button className="delete" onClick={()=>delEl(i.id)}>X</button>
+<input type="text"
+value={state}
+placeholder='Enter something'
+onChange={(e)=>{setState(e.target.value);}}
+onKeyDown={(e)=>keyPress(e)}
+/>
+
+<button className='enter' onClick={newEl}>Enter</button>
+
+</div>
+
+{/* Вместо () нужно добавить return. ЭТО ВАЖНО!!!! */}
+
+{
+  items.map((i,index)=>{
+    return(
+      //e,data в onStop - это обязаательные параметры(без e нихуя работать не будет)
+      <Draggable key={index} defaultPosition={i.pos}
+      onStop={(e,data)=>{updatePos(data,index)}}>
+        {/* у background еще одни {}. ЭТО ВАЖНО!!! */}
+        <div className="todo__item" style={{backgroundColor: i.color}}>
+          {`${i.text}`} 
+          <button
+           className="delete"
+          //  callback - ЭТО ВАЖНО!!! 
+            onClick={()=>delEl(i.id)}
+           >X</button>
         </div>
       </Draggable>
-       )
-      })
-    }
+    )
+  })
+}
 
-     </div>
+   </section>
+
     </>
   )
 }
